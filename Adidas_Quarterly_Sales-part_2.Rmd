@@ -1,0 +1,114 @@
+---
+title: "Residual Analysis: An R Project On How Adidas Quarterly Sales Are Affected
+        By Quarter Of The year, Region, And By Product Part 2 " Using Dummy variables to analyse Adidas quarter of the year product performances"
+output: 'html_notebook'
+Author: Ebenezer Akpati
+Date: 25/05/23
+---
+
+## Project Statement:
+
+"How are quarterly sales affected by quarter of the year, region, and by product?
+
+## Qualitative Variables
+
+I will be using Qualitative variable quarter of the year, however, machine learning algorithms, including regression, rely on numeric values. So we have to convert qualitative variables to numeric variables.
+
+## Dummy Variables
+
+What is often done is a series of binary variables is used to capture the different levels of the qualitative variable. Specifically, we would replace the quarter of the year variable, quarter_NoYear, with three variables: Second, Third, and Fourth. The values in these columns take on a value of 1 if the observation fits into that category, and a value of zero otherwise. We only need three columns because if they all have a value of 0, then that means the observation fits into the first quarter.
+
+Here's a dataframe to illustrate that idea with a bit more detail:
+
+```{r}
+
+
+data.frame('quarter_char' = c('First', 'Second', 'Third', 'Fourth'),
+                 'quarterSecond' = c(0, 1, 0, 0),
+                 'quarterThird' = c(0, 0, 1, 0),
+                 'quarterFourth' = c(0, 0, 0, 1))
+```
+
+## Relationship between operating_profit on quarter_char column
+
+Regression of operating_profit on quarter_char column, which as a data type of factor.
+
+```{r}
+lm_b<- lm(operating_profit  ~ quarter_char, data = Adidias)
+summary(lm_b)
+```
+
+There is a coefficient estimate for the second through fourth quarters, but not for the first quarter. The intercept represents the estimate of operating_profit for the first quarter, and the coefficient estimates for the other variables represent the difference between that quarter from the first quarter. the operating_profit for third quarter is 13,142 higher than the baseline estimated and 7,779 higher than the baseline estimated in second quarter.
+
+## Manual Comparison of Mean
+Let's create a manual comparison by calculating the mean value of operating_profit for each quarter.
+
+```{r}
+Adidias %>%
+  group_by(quarter_char) %>%
+  summarize(meanProfit = mean(operating_profit)) %>%
+  ungroup()
+```
+
+The value of meanProfit for the second quarter, 35,238.62 is higher than the value of meanProfit for the first quarter by 7,778.78, which is represented by the coefficient estimate on quarter_cherSecond in the regression model.
+
+There's a similar relationship for the other two quarters and the difference from the first quarter and their coefficient estimates.
+
+In terms of statistical significance, all the coefficients are highly significant (p-values < 0.001). This means that the quarterly variables have a significant impact on operating profit.
+
+## Comparing two simple regression model
+
+```{r}
+lm_a <- lm(operating_profit  ~ units_sold, data = Adidias)
+
+lm_b<- lm(operating_profit  ~ quarter_char, data = Adidias)
+export_summs(lm_a, lm_b) # Create a nice looking table for comparing the regression results
+```
+
+The table indicates the key takeaways from both linear models:
+* Coefficient estimates:
+* Model 1, the coefficient estimate is  -23568.80 for the intercept and is  225.72   for Unit_sold.
+* For model 2, the coefficient estimate is 27459.84 for the intercept and is         6925.40 for quarter_charFourth,  7778.78 for  quarter_charSecond and 13142.38 for   quarter_charThird 
+* The standard errors are in parentheses below these coefficient estimates.
+* N stands for number of observations, and they are both based on 9648               observations.
+* R2 is the R-squared, which is much larger for model 1, 80%, than for model 2, 1%.   This means that model 1 explains more variation in opratiing_profit than model 2,   and is better for making predictions.
+
+## Visualizing coefficients and standard errors
+
+Let's use the jtools package to plot the coefficients and standard errors to help visualize the results.
+
+```{r}
+library(jtools)
+plot_summs(lm_a, lm_b)
+```
+This visualization is excellent. It clearly shows that the coefficient on Unit_sold from model 1 is positive, and has a much smaller standard error relative to the positive coefficient on quarter_char from model 2. The long orange whiskers and the short, barely visible blue whiskers represent the standard error, or the range in which the actual value could be.
+
+## The Unique Effect of Quarter of the Year
+Quarter of the year may have a significant effect on quarterly oprating_profit after controlling for the percentage of sales that come from other products. Let's test this out by including it with the unit_sold variables that we have already investigated.
+
+```{r}
+lm_c <- lm(operating_profit  ~ units_sold + quarter_char,data = Adidias)
+export_summs(lm_a, lm_b, lm_c)
+```
+
+regression analysis with the addition of the "units_sold" variable yields the following results:
+
+The coefficient for the "units_sold" variable is 226.424 with a standard error of 1.152. This means that for each additional unit sold, the operating profit is estimated to increase by 226.424. The coefficient is highly significant (p-value < 0.001), indicating a strong positive relationship between units sold and operating profit.
+
+The coefficient for the "quarter_charFourth" variable is 11,268.915 with a standard error of 696.438. This coefficient represents the difference in operating profit between the fourth quarter and the baseline quarter, while holding the number of units sold constant. The positive coefficient suggests that the fourth quarter tends to have higher operating profit compared to the baseline quarter.
+
+All coefficients are highly significant (p-values < 0.001), indicating their strong relationship with operating profit.
+
+The multiple R-squared value is 0.8019, indicating that the model with "units_sold" and quarterly variables explains approximately 80.19% of the variability in operating profit. The adjusted R-squared value is 0.8018, which takes into account the number of predictors in the model.
+
+The F-statistic is 9756 with a p-value < 2.2e-16, indicating that the overall model is highly significant.
+
+This change is effectively communicated by visualizing the coefficients from all three models.
+```{r}
+plot_summs(lm_a, lm_b, lm_c)
+```
+## Conclusion
+Based on Model 2 and Model 3, it appears that the quarter_charThird variable had the largest positive coefficient and was statistically significant in both models. This suggests that the third quarter (quarter_charThird) had the most significant positive impact on the dependent variable compared to the other quarters (quarter_charFourth and quarter_charSecond). However, the practical significance and implications may vary depending on the specific situation or domain being studied.
+
+
+

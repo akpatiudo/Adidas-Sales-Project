@@ -1,0 +1,216 @@
+---
+title: " Decision Trees: An Analysis To Predict Adidas Product With High Margin Profit"
+output: html_notebook
+---
+Introduction:
+
+This analysis is squeal my work tittled *Residual Analysis: How Adidas Quarterly Sales Are Affected By Quarter Of The year, Region, And By Product* As an analyst, I want to give Adidas data insight on how not to over dependent on their best performing product. I will now use the decision tree algorithm to address this business problem. 
+
+I assumed Adidas is planning for the future and would like to set up their business so they are not so reliant on selling their best product: Women's Apparel. One way to do that is to increase the sales of profitable products. Thus, Adidas would like to predict when a transaction is a going to be a sale of a high margin profit product. Profit margin is the percentage of gross profit to revenue, or revenue minus costs divided by revenue. It is a percentage of how much profit each product makes or what percentage of profit is earned for each dollar of revenue. I have to create the target veriable 'column' from 'Opreating_Margin' 
+
+
+```{r}
+library(tidyverse)
+library(readr)
+Adidas_tree <- read.csv('C:/Users/ebene/Desktop/Adidas_sales_project/Adidas.csv',stringsAsFactors = TRUE)
+Adidas_tree<-read.csv('C:/Users/ebene/Desktop/Adidas_sales_project/Adidas.csv')#loard in my data
+Adidas_tree$Product <- factor(Adidas_tree$Product)# convert product to factor datatype
+Adidas_tree1 <- Adidas_tree[, !colnames(Adidas_tree) %in% "Retailer_ID", drop = FALSE]# dropped the retailer column
+```
+first notice that the dataset has 9648 rows and 13 features be for I dropped one column.
+
+```{r}
+# Check the structure of the data
+str(Adidas_tree1)
+slice_sample(Adidas_tree1, n=10)
+glimpse(Adidas_tree1)
+```
+
+```{r}
+library(dplyr)
+
+# Filter out rows with 0 values across the entire dataset
+Adidas_tree_filtered <- Adidas_tree1 %>%
+  filter_all(all_vars(. != 0))
+
+# Check if any rows are remaining in the filtered dataset
+if (nrow(Adidas_tree_filtered) > 0) {
+  # Perform further analysis or summary
+  summary(Adidas_tree_filtered)
+} else {
+  # No rows remaining after filtering
+  print("No rows remaining after filtering.")
+}
+
+# Check if any rows meet the filtering condition
+if (any(Adidas_tree$Oprating_Margin == 0)) {
+  print("There are rows with 0 values in the Oprating_Margin column.")
+} else {
+  print("No rows with 0 values in the Oprating_Margin column.")
+}
+
+```
+
+```{r}
+# Define a function for creating a confusion matrix
+my_confusion_matrix <- function(cf_table) {
+  # Extract values from the confusion matrix
+  true_positive <- cf_table[4]
+  true_negative <- cf_table[1]
+  false_positive <- cf_table[2]
+  false_negative <- cf_table[3]
+  
+  # Calculate performance metrics
+  accuracy <- (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
+  sensitivity_recall <- true_positive / (true_positive + false_negative)
+  specificity_selectivity <- true_negative / (true_negative + false_positive)
+  precision <- true_positive / (true_positive + false_positive)
+  neg_pred_value <- true_negative / (true_negative + false_negative)
+  
+  # Print the confusion matrix
+  print(cf_table)
+  
+  # Create a list of performance metric descriptions
+  my_list <- list(
+    sprintf("%1.0f = True Positive (TP), Hit", true_positive),
+    sprintf("%1.0f = True Negative (TN), Rejection", true_negative),
+    sprintf("%1.0f = False Positive (FP), Type 1 Error", false_positive),
+    sprintf("%1.0f = False Negative (FN), Type 2 Error", false_negative),
+    sprintf("%1.4f = Accuracy (TP+TN/(TP+TN+FP+FN))", accuracy),
+    sprintf("%1.4f = Sensitivity, Recall, Hit Rate, True Positive Rate (How many positives did the model get right? TP/(TP+FN))", sensitivity_recall),
+    sprintf("%1.4f = Specificity, Selectivity, True Negative Rate (How many negatives did the model get right? TN/(TN+FP))", specificity_selectivity),
+    sprintf("%1.4f = Precision, Positive Predictive Value (How good are the model's positive predictions? TP/(TP+FP))", precision),
+    sprintf("%1.4f = Negative Predictive Value (How good are the model's negative predictions? TN/(TN+FN)", neg_pred_value)
+  )
+  
+  return(my_list)
+}
+
+```
+The last feature is the target feature or the dependent variable. This is the variable we are trying to predict. It is called `Op_Maegin`. It is a factor that is either low or high. I set it at 40% and above
+
+```{r}
+# Remove '%' sign and create new column
+Adidas_tree_filtered$Op_Margin <- as.numeric(gsub("%", "", Adidas_tree_filtered$Operating_Margin, fixed = TRUE))
+
+
+# Assign "high" or "low" based on condition
+Adidas_tree_filtered$Op_Margin <- ifelse(Adidas_tree_filtered$Op_Margin >=40, "high", "low")
+```
+
+Let's look more in depth at the target feature. For tree analysis, the target feature is a categorical variable. In this implementation we can leave it as a factor. About 36% of these purchases are for low Margin profit items.
+
+# Explore the target feature
+```{r}
+Adidas_tree_filtered$Op_Margin <- as.factor(Adidas_tree_filtered$Op_Margin)
+freq <- table(Adidas_tree_filtered$Op_Margin)
+freq[2]/(freq[1]+freq[2])
+contrasts(Adidas_tree_filtered$Op_Margin)
+```
+Before using the algorithm, we need to prepare the data. The first line below loads the `caret` package. The next line sets the seed for the randomization that will be used for the data split. The `caret::createDataPartition()` function uses the caret package to split the data. Basically, it creates a number for `p` amount, in this case 0.75, of the target feature and lists these numbers in a matrix (since `list` is `FALSE`). Next, the training data and testing data are created. These use the numbers from the `partition` matrix that we just created. `data_train` retains each of the rows with numbers in `partition` while `data_test` takes the numbers not in partition, i.e., `-partition`. We use the `set.seed()` function with the same number every time to get a reproducible result every time we run this code, since the function relies on R's random number generator. Of course, your results might not exactly replicate mine if your R version is different, etc. 
+
+
+```{r}
+library(caret)
+
+# Assuming you have a data frame called Adidas_tree_filtered
+# and the target variable is "Op_Margin"
+
+set.seed(121)  # Set a seed for reproducibility
+index <- createDataPartition(Adidas_tree_filtered$Op_Margin, p = 0.75, list = FALSE)
+
+train_data <- Adidas_tree_filtered[index, ]  # Training data
+test_data <- Adidas_tree_filtered[-index, ]  # Testing data
+
+```
+
+
+For decision trees, which don't rely on distance to calculate splits, we do not need to standardize our data. Thus, we are ready to run our model. The `tree()` function creates our tree object. The first argument in the function is our formula. We are predicting the feature variable, `Op_Margin` on the left-hand side of the `~`, and using all of our other features to predict it, as indicated by `.`. We do this, of course, with our training data. As usual, we hold back our test data to evaluate our model later. 
+
+# Run the model
+```{r}
+# Check for missing values in train_data
+colSums(is.na(train_data))
+
+# Remove rows with missing values
+train_data_clean <- na.omit(train_data)
+
+#install.packages('tree')
+library(tree)
+model_tree1 <- tree(Op_Margin ~ . , train_data)
+
+```
+
+First, before we explore the tree and find out what it tells us, let's see how accurate our model is. If this model is going to help Adidas makes decisions, it needs to be accurate at predicting whether a purchase will be for a high gross profit margin product or not. 
+
+The first step in this process is using the model we trained on our training data to see how well it predicts on our holdout testing data. The predict function for the `tree` package does this for us. Notice that the testing data is passed as the second argument. The `type='class'` argument tells R to give the output as the actual class label--`low` and `high` in our case.
+
+# Predict the model on the holdout testing data
+```{r}
+predict_tree1 <- predict(model_tree1, test_data, type='class') 
+
+```
+
+Next, let's use the confusion matrix function created at the beginning of the notebook. Overall, we find that our model is very accurate. The model makes the correct prediction about 74% of the time!
+
+Let's explore some details of the accuracy of this model. The table shows the following output:
+* When a transaction is actually/truthfully a high gross profit margin transaction, the model correctly classifies it as such-by saying "high",411  times. This is called a True Positive (TP), Hit.
+
+* When a transaction is truthfully a low gross profit margin transaction, the model correctly classifies it as such--by saying "low", 1,374 times. This is a True Negative (TN), Rejection.
+
+* On the other hand, the model makes two kinds of errors. When the model transaction is not a high gross profit margin transaction, but the model incorrectly says it is, this is called a False Positive (FP), Type 1 Error. It happens 177 times.
+
+* Finally, when a transaction is a high gross profit margin transaction and the model says it is not, which here happens 441 times, it is called a False Negative (FN), Type 2 Error.
+
+These numbers can then be manipulated to create different measures of accuracy, as follows:
+* Overall accuracy (TP+TN/(TP+TN+FP+FN)) is 0.7404.
+
+* Sensitivity, Recall, Hit Rate, True Positive Rate (How many positives did the model get right? TP/(TP+FN)), is 0.4779.
+
+* Specificity, Selectivity, True Negative Rate (How many negatives did the model get right? TN/(TN+FP)) is 0.8859. 
+
+* Precision, Positive Predictive Value (How good are the model's positive predictions? TP/(TP+FP)) is 0.6990.
+
+* Negative Predictive Value (How good are the model's negative predictions? TN/(TN+FN) is  "0.7537.
+
+Overall, our model does a great job at predicting when a purchase will be high profit margin versus low profit margin and gets it right 74% of the time. The aspect of the model that is the least effective is its sensitivity and the aspect that is the most effective is the specificity. This means that the model is very good at classifying the low margin purchases successfully (specificity), but slightly worse at classifying the high margin purchases correctly (sensitivity). Thus, while the model is quite good overall, it particularly excels at identifying bad transactions. As we examine the tree below, it should become clear why low margin products are a bit easier to classify.
+
+# Confusion matrix - checking accuracy
+```{r}
+length(predict_tree1)
+length(test_data$Op_Margin)
+
+table1 <- table(predict_tree1, test_data$Op_Margin)
+my_confusion_matrix(table1)
+```
+
+
+Next, let's examine the details of the tree we have created and what it might tell us that might help Adidas increase their sales of profitable products. We can start this process very simply by using the `summary()` function on our tree object, `model_tree`. We learn a couple very useful things here. First, we learn that only three variables were used in our tree--`Operating_Profit` `Product` and `Total_Sales`. Next, we are told how many terminal nodes exist. Finally, we are given some error measurements. Residual mean deviance is a measure of variance in the model and misclassification error rate is measure of how many examples were misclassified. It shows that 1,875, or about 26%, of our total observations were incorrectly classified (split into the wrong partition). 
+
+# Summarize the results from our model
+```{r}
+summary(model_tree1)
+```
+
+Next, let's look at the tree in text form. To do this, we simply type the name of the tree object that we just created. This is our tree, albeit in text form. It gives us quite a lot of information. the first line is the key to reading the table, `node), split, n, deviance, yval, (yprob)`. It says that each line starts with a numbered node, lists the equation used to split the data, the number of observations following the left side of the branch, the deviance associate with the branch, the predicted value at the node, and the proportion of the values at the branch that are absent and present. This is very informative, but let's also plot the tree so that we can get a fuller picture (literally) and discuss what the tree is telling us. 
+
+# Tree in text form
+```{r}
+model_tree1
+```
+
+These two functions plot the tree. The first one gives the outline and the second one inserts the text. The heights of the lines are proportional to the decrease in impurity. Thus, the longer the line, the more helpful the split at reducing messiness in the model. The `all=TRUE` option adds extra labels, `cex=.75` provides the size of things, `font=2` changes the font, `digits=2` changes the number of digits following the decimal point, and `pretty=0` keeps the labels in the plot. 
+
+So, what do we learn from the text above and the plot? As we move through the tree, moving to the left is "No" while moving to the right is "Yes". "high" and "low" at the leaf nodes indicates that is the prediction of the profitability of the purchase. 
+
+We actually learn a lot that can help Adidas. The first, and most significant split that determines whether a purchase will be for a high or low magin profit is whether the purchases Men's Apparel,Men's Athletic Footwear,Women's Athletic Footwear,Women's Street Footwear or Men's Street Footwear,Women's Apparel. If the answer to this is yes, we move to the right of the tree and the product is very likely to be low profitability. While the management team at Adidas surely knows which products are high and low profit. For Men's Street Footwear, Women's Apparel, profitability is also predicted to be high, whether Opreating_profits is above or below $149,813. 
+
+
+# Plot the tree
+```{r}
+plot(model_tree1)
+text(model_tree1, all=TRUE, cex=.75, font=2, digits=2, pretty=0)
+```
+
+
+

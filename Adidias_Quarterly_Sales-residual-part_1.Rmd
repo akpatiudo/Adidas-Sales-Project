@@ -1,0 +1,243 @@
+---
+title: "Residual Analysis: An R Project On How Adidas Quarterly Sales Are Affected
+        By Quarter Of The year, Region, And By Product Part One"
+output: 'html_notebook'
+Author: Ebenezer Akpati
+Date: 25/05/23
+---
+
+## Introduction
+This dataset is An Adidas sales dataset that have information on the sales of Adidas products, number of units sold, the total sales revenue, the location of the sales, the sales outlets and method of sales.
+
+This dataset is very granular, each row represents a line item for a purchase at one of 6 Retailers outlet spread across all the states in the five Region of USA. there is no missing value in this dataset. this project has three part to it, part one seeks to answer project statement using *Residual analysis* and part two seeks to use *Dummy variables in regression* to explain the project statement and part three, I want to give Adidas data insight on how not to over dependent on their best performing product using the *decision tree algorithm* to address this business problem.  
+
+## Data Source
+
+The data used in this analysis is available publicly on Kaggle.com. <https://www.kaggle.com/datasets/heemalichaudhari/adidas-sales-dataset>
+
+## Project Statement:
+
+"How are quarterly sales affected by quarter of the year, region, and by product?
+
+## Step 1
+
+Load the Libraries
+
+```{r}
+library(tidyverse)
+library(corrplot)
+library(rmarkdown)
+library(jtools) # For tabulating and visualizing results from multiple regression models
+library(ggstance)
+library(huxtable)
+```
+
+## Descriptive Analysis
+Data Preparation (ETL)
+
+load dataset as a dataframe object and checking the dimension with dim(), it has 9648 rows and 12 columns.
+
+```{r}
+Adidias <- read.csv('C:/Users/ebene/Desktop/Adidas_sales_project/Adidias.csv')
+# Save the data frame as an RDS file
+saveRDS(Adidias, file = "C:/Users/ebene/Documents/Adidias.rds")
+Adidias <- readRDS("C:/Users/ebene/Documents/Adidias.rds")
+dim(Adidias)
+```
+
+Getting to Know the Dataset and checking for missing values
+
+```{r}
+str(Adidias)
+colSums(is.na(Adidias))
+```
+
+From the data structure above, there are columns data, Retailer_ID and Invoice_Date. These variable do not provide enough information to perform linear regression analysis, which can be removed, but we need to get quarterly sales from date, hence the date will be useful,
+
+## Summary of dataset.
+
+```{r}
+rmarkdown::paged_table(Adidias)
+Adidias<- Adidias %>% 
+select(-Retailer_ID)# romoves the column Retiasler
+summary(Adidias)## Step 3.1 converting to date using lubridate function
+```
+## Converting Date to  Datetype 
+creating a column for quarter, I had to break date into quarter then concatenate date and quarter and quarter_char to be able to answer the project statement
+
+```{r}
+library(lubridate)
+# Convert 'Invoice_Date' column to Date type
+Adidias$Invoice_Date <- dmy(Adidias$Invoice_Date)
+
+# Get quarters
+Adidias$quarter <- quarter(Adidias$Invoice_Date)
+# Create a new column 'date_quarter'
+Adidias$date_quater <- paste(Adidias$Invoice_Date, Adidias$quarter, sep = "-")
+# Create a new column 'quarter_char' representing quarters as characters
+Adidias <- Adidias %>%
+  mutate(quarter_char = case_when(
+    quarter == 1 ~ 'First',
+    quarter == 2 ~ 'Second',
+    quarter == 3 ~ 'Third',
+    quarter == 4 ~ 'Fourth',
+    TRUE ~ as.character(quarter)
+  ))
+
+# View the updated data frame
+#print(Adidias)
+
+```
+
+## Renaming my data columns
+
+```{r}
+Adidias <- rename(Adidias, total_sales = 'Total_Sales',
+                     operating_profit = 'Operating_Profit',
+                     invoice_date = 'Invoice_Date',
+                     price_per_unit = 'Price_per_Unit',
+                     units_sold = 'Units_Sold',
+                     sales_method = 'Sales_Method',
+                     region = Region,
+                     retailer = Retailer,
+                     state = State,
+                     city = City,
+                     product = Product)
+```
+
+The number of transaction or number of sales unit made for each product that was sold in one hand and knowing the retailer with the most product unit sold in other hand: Foot Locker had the most unit sold and was followed by West Gear. For retailers with the least number of sales transactions is Walmart. Men's Street Footwear and Men's Athletic Footwear had the most sales unite. Men's Apparel and Women's Athletic Footwear had the lowest sold unit
+
+```{r}
+#Examine PROD_NAME
+library(data.table)
+setDT(Adidias)
+Adidias[, .N , "product"]
+sort(table(Adidias$retailer), decreasing = T)
+```
+
+## Period of Analysis
+
+```{r}
+c(min(Adidias$invoice_date), max(Adidias$invoice_date))
+```
+
+data used from 1 January 2020 up to 31 December 2021
+
+## Region Unit Sold
+
+West Region has the most Adidas purchase transactions and Southeast Region is the area with the fewest adidas purchase transactions
+
+```{r}
+sort(table(Adidias$region), decreasing = T)
+```
+
+from the summary() function, there were days no unite was sold per day and there were days that highest average unite sold per day was 1,275
+
+## Days No Product Was Sold
+
+```{r}
+zero_sales <-Adidias %>%
+    filter(units_sold == "0")
+zero_sales
+```
+
+On June 5, 2021 and June 11, 2021 in Omaha, Midwest region, state of Nebraska in second quarter, Woman's Athletic Footwear products did not sell at Foot Locker. it should be investigated what happend in the month of June to avoid future occurrence.
+
+## Sales Method Performance
+
+Adidas Online sales method performed better and in-store has the leaser performance
+
+```{r}
+  sort(table(Adidias$sales_method), decreasing = T)
+```
+
+## Exploratory Analysis
+Statistical Analysis
+
+Correlation relationship on Unit Sold and opration_profit, the first code gives the output of the correlation between the two variables with out the correlation matrix,the code snippets gives the correlation matrix. At 0.89, the relationship between oprational_profit and units_sold is directly proportional.
+
+
+```{r}
+cor(Adidias$units_sold, Adidias$operating_profit)
+cor(Adidias[,c('operating_profit', 'units_sold')])
+```
+
+## Regression Opreation_profit On units_sold With A Scatter Plot
+
+the stat_smooth function from the ggplot2 package was used to add regression function on the plot. The "lm" value for the method parameter indicates that I am using a linear model to add a trend line to the scatter plot.
+
+```{r}
+ggplot(Adidias, aes(x =units_sold , y = operating_profit)) +
+  geom_point() +
+  stat_smooth(method = 'lm')
+```
+
+conceptually, this algorithm calculates the slope and intercept of a line that mathematically reduces the sum of the distance between all of the data points and the line.
+
+## Residuals Analysis
+
+created a linear model to predict operational by regressing units_sold from the Adidas data frame, and then look at a summary of the model.
+
+```{r}
+lm_a <- lm(operating_profit  ~ units_sold, data = Adidias)
+summary(lm_a)
+
+```
+
+Residuals are simply the difference between the actual observations of opration_revenue that were used to create the model and the values of unit_sales that are fitted from the model.
+
+## Creating Residual DataFrame 
+
+To look at some specific observations I will first creating a dataframe that has the actual values of Unit_sales, the opreating_revenue, and two new columns: One fittedOpreating_profit, this will be created using the coefficient estimates from the linear model. The second column will be created, residuals, by subtracting the values from the fittedOpreating_profit, column from the opreating_profit.
+
+```{r}
+resid <- Adidias %>%
+  select(operating_profit, units_sold) %>%
+  mutate(fittedOpreating_profit = -23568.799 + 225.719*units_sold
+         , residuals = operating_profit - fittedOpreating_profit)
+head(resid)
+```
+
+The first row indicates that when the value of Unit_sold is equal to 1,200, the fitted value of operating_profit is 247,294.0. However, the actual operating_profit of 300,000 was above the amount by 52,706. In other words, the actual value of operating_profit is *above* the line created by the linear model.
+
+looking at the second row, which indicates that when the value of unit_sold is equal to 1000, the fitted value of operating_profit is 202150.2. This time, the actual value of operating_profit of 150000 is below that amount by 52150.20 meaning that it falls *below* the line created by the linear model.
+
+## Business Management Application of Residuals
+
+As a Business manager of Adidas Sales that wants to see "How are quarterly sales affected by quarter of the year, region, and by product? can have a clue from residual analysis If we think of the fitted values as a target, or expectation of what opreating_profit should be, then the residual tells us whether that revenue is more or less than expected. In other words, it can be thought of as a variance.
+
+## Residual Analysis  Explaining the project statement
+
+```{r}
+# Create a dataframe with residuals and identifying information
+resids2 <- Adidias %>%
+  select(retailer,product,region, date_quater, units_sold, operating_profit)
+resids2$fittedOpreating_profit = lm_a$fitted.values
+resids2$residuals = lm_a$residuals
+
+# Get the five best performing store/quarter combinations
+best <- resids2 %>%
+  arrange(desc(residuals)) %>%
+  .[1:4,]
+# Get the five worst performing store/quarter combinations
+worst <- resids2 %>%
+  arrange(residuals) %>%
+  .[1:4,] %>%
+  arrange(desc(residuals))
+
+# Combine the five best and worst into one dataframe and display them
+bestWorst <- bind_rows(best,worst)
+bestWorst
+```
+
+* Best stores are Walmart and Sports Direct, best product is Women's Apparel
+  the store at Southeast beat their goal during second and third quarters for 2021   by at least $198,601.2
+* The store at South also beat its expectation during third and fort quarter by at   least $154,993.3.
+* Worst stores are West Gear and Sports Direct in the West and South for Men's       Athletic Footwear and Men's Street Footwear.
+* The store at West missed its expected quarterly oprating_profit for first          quarters of 2021 by at least $108,757.6.
+* The store in the South also missed its expected quarterly oprating_profits for     third quarter in 2021 by about $102,934.7.
+
+## Recommendation
+
+The manager, may want to look into the two stores that under performed during 2021 to work on improving their performance. In contrast, He may want to look into the two stores that outperformed during 2021 to find out if their best practices can be replicated in other locations.
+
