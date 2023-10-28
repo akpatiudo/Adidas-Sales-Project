@@ -17,13 +17,13 @@ The data used in this analysis is available publicly on Kaggle.com. <https://www
 ## Exploratory Analysis
 *  Statistical Analysis
 
-# Insight
+## Insight
 ![Regression Opreation_profit On units_sold With A Scatter Plot](https://github.com/akpatiudo/Adidas-Sales-Project/assets/118566096/8ff36b45-8aff-452c-9a12-9be0e858c25b)
 ![Residual Table ](https://github.com/akpatiudo/Adidas-Sales-Project/assets/118566096/2279c600-6ca1-445c-83a0-9e23d5582339)
 ![Best Performing Store and Quater of the year](https://github.com/akpatiudo/Adidas-Sales-Project/assets/118566096/7780f757-0786-4dce-bc2e-2c046a9e2263)
 ![[Best Performing Store and Quater of the yea](https://github.com/akpatiudo/Adidas-Sales-Project/assets/118566096/eef87407-8c91-4a27-9b89-1f8eef82bf24)
 
-# Residual Analysis Explaining the project statement
+## Residual Analysis Explaining the project statement
 *  Best stores are Walmart and Sports Direct, best product is Women's Apparel
    The store at Southeast beat their goal during second and third quarters for 2021 by at least $198,601.2
    The store at South also beat its expectation during third and fort quarter by at least $154,993.3.
@@ -31,20 +31,20 @@ The data used in this analysis is available publicly on Kaggle.com. <https://www
    The store at West missed its expected quarterly oprating_profit for first quarters of 2021 by at least $108,757.6.
    The store in the South also missed its expected quarterly oprating_profits for third quarter in 2021 by about $102,934.7.
 
-   # Recommendation
-   The manager, may want to look into the two stores that under performed during 2021 to work on improving their performance. In contrast, He may want to look into the two stores that outperformed during 2021 to find out if their best practices can be replicated in other locations.
+## Recommendation
+The manager, may want to look into the two stores that under performed during 2021 to work on improving their performance. In contrast, He may want to look into the two stores that outperformed during 2021 to find out if their best practices can be replicated in other locations.
 
 
 # ADIDAS SALES PROJECT 
-# PART TWO: Dummy Variables In Regression
+## PART TWO: Dummy Variables In Regression
 
 ## Project Statement:
 "How are quarterly sales affected by quarter of the year, region, and by product?
 
-# Qualitative Variables
+## Qualitative Variables
 I Used Qualitative variable quarter of the year because machine learning algorithms, including regression, rely on numeric values. So we have to convert qualitative variables to numeric variables.
 
-# Dummy Variables
+## Dummy Variables
 What is often done is a series of binary variables is used to capture the different levels of the qualitative variable. Specifically, we would replace the quarter of the year variable, quarter_NoYear, with three variables: Second, Third, and Fourth. The values in these columns take on a value of 1 if the observation fits into that category, and a value of zero otherwise. We only need three columns because if they all have a value of 0, then that means the observation fits into the first quarter.
 Here's a dataframe to illustrate that idea with a bit more detail:
 
@@ -56,11 +56,11 @@ data.frame('quarter_char' = c('First', 'Second', 'Third', 'Fourth'),
 ![ Relationship between operating_profit on quarter_char column](https://github.com/akpatiudo/Adidas-Sales-Project/assets/118566096/18a2082c-af65-45cf-b2ce-a44525066473)
 There is a coefficient estimate for the second through fourth quarters, but not for the first quarter. The intercept represents the estimate of operating_profit for the first quarter, and the coefficient estimates for the other variables represent the difference between that quarter from the first quarter. the operating_profit for third quarter is 13,142 higher than the baseline estimated and 7,779 higher than the baseline estimated in second quarter.
 
-# The Unique Effect of Quarter of the Year
+## The Unique Effect of Quarter of the Year
 Quarter of the year may have a significant effect on quarterly oprating_profit after controlling for the percentage of sales that come from other products. Let's test this out by including it with the unit_sold variables that we have already investigated
 ![image](https://github.com/akpatiudo/Adidas-Sales-Project/assets/118566096/1256b558-24d6-421c-a6c6-a457e3c27644)
 
-# Insight
+## Insight
 
 regression analysis with the addition of the "units_sold" variable yields the following results:
 
@@ -76,18 +76,18 @@ The F-statistic is 9756 with a p-value < 2.2e-16, indicating that the overall mo
 This change is effectively communicated by visualizing the coefficients from all three models.
 ![coefficients from all three models](https://github.com/akpatiudo/Adidas-Sales-Project/assets/118566096/373776f0-51a6-48f0-a8ed-9d0eb974da83)
 
-# Conclusion
+## Conclusion
 Based on Model 2 and Model 3, it appears that the quarter_charThird variable had the largest positive coefficient and was statistically significant in both models. This suggests that the third quarter (quarter_charThird) had the most significant positive impact on the dependent variable compared to the other quarters (quarter_charFourth and quarter_charSecond). However, the practical significance and implications may vary depending on the specific situation or domain being studied.
 
-# ADIDAS SALES PROJECT 
-# PART THREE: Decision Tree Algorithm
+## ADIDAS SALES PROJECT 
+## PART THREE: Decision Tree Algorithm
 
-# Introduction:
+## Introduction:
 
 This analysis is squeal my work tittled *Residual Analysis: How Adidas Quarterly Sales Are Affected By Quarter Of The year, Region, And By Product* As an analyst, I want to give Adidas data insight on how not to over dependent on their best performing product. I will now use the decision tree algorithm to address this business problem. 
 I assumed Adidas is planning for the future and would like to set up their business so they are not so reliant on selling their best product: Women's Apparel. One way to do that is to increase the sales of profitable products. Thus, Adidas would like to predict when a transaction is a going to be a sale of a high margin profit product. Profit margin is the percentage of gross profit to revenue, or revenue minus costs divided by revenue. It is a percentage of how much profit each product makes or what percentage of profit is earned for each dollar of revenue. I have to create the target veriable 'column' from 'Opreating_Margin' 
 
-# Data Preperation
+## Data Preperation
 
 ```{r}
 library(caret)
@@ -105,11 +105,12 @@ I ran the model to find its accuracy
 Overall, our model does a great job at predicting when a purchase will be high profit margin versus low profit margin and gets it right 74% of the time. The aspect of the model that is the least effective is its sensitivity and the aspect that is the most effective is the specificity. This means that the model is very good at classifying the low margin purchases successfully (specificity), but slightly worse at classifying the high margin purchases correctly (sensitivity). Thus, while the model is quite good overall, it particularly excels at identifying bad transactions. As we examine the tree below, it should become clear why low margin products are a bit easier to classify.
 
 # Insight 
-I examine the details of the tree I have created and what it might tell me that might help Adidas increase their sales of profitable products. I started this process very simply by using the `summary()` function on the tree object, `model_tree`. I learn a couple very useful things here. First, we learn that only three variables were used in our tree--`Operating_Profit` `Product` and `Total_Sales`. Next, we are told how many terminal nodes exist. Finally, we are given some error measurements. Residual mean deviance is a measure of variance in the model and misclassification error rate is measure of how many examples were misclassified. It shows that 1,875, or about 26%, of our total observations were incorrectly classified (split into the wrong partition). 
-# Summarize the results from our model
-```{r}
-summary(model_tree1)
-```
+ 
+## Communicating Insight From The Model
+let's examine the details of the tree we have created and what it might tell us that might help Adidas increase their sales of profitable products. We can start this process very simply by using the `summary()` function on our tree object, `model_tree`. We learn a couple very useful things here. First, we learn that only three variables were used in our tree--`Operating_Profit` `Product` and `Total_Sales`. Next, we are told how many terminal nodes exist. Finally, we are given some error measurements. Residual mean deviance is a measure of variance in the model and misclassification error rate is measure of how many examples were misclassified. It shows that 1,875, or about 26%, of our total observations were incorrectly classified (split into the wrong partition). 
+
+##Summarize The Results From Our Model
+
 Classification tree:
 tree(formula = Op_Margin ~ ., data = train_data)
 Variables actually used in tree construction:
@@ -117,12 +118,10 @@ Variables actually used in tree construction:
 Number of terminal nodes:  4 
 Residual mean deviance:  1.103 = 7970 / 7229 
 Misclassification error rate: 0.2592 = 1875 / 7233 
-To Understand this result, let plot the Tree in text form and in graphe
 
-# Tree in text form
-```{r}
-model_tree1
-```
+It says that each line starts with a numbered node, lists the equation used to split the data, the number of observations following the left side of the branch, the deviance associate with the branch, the predicted value at the node, and the proportion of the values at the branch that are absent and present. This is very informative, but let's also plot the tree so that we can get a fuller picture (literally) and discuss what the tree is telling us. 
+
+## Tree In Text Form
 node), split, n, deviance, yval, (yprob)
       * denotes terminal node
 
@@ -134,10 +133,32 @@ node), split, n, deviance, yval, (yprob)
       13) Operating_Profit > 149813 226  180.7 high ( 0.8628 0.1372 ) *
      7) Product: Men's Apparel,Men's Athletic Footwear,Women's Athletic Footwear,Women's Street Footwear 1969 2471.0 low ( 0.3210 0.6790 ) *
 
-![Decision Tree](https://github.com/akpatiudo/Adidas-Sales-Project/assets/118566096/260e2845-5f2a-4d9e-94a0-94a3d5ce922a)
+In the given tree structure, the nodes are labeled numerically, and each node represents a decision point based on the specified condition. Here's the explanation of nodes 6 and 7 that houses Adidas Products:
 
-So, what do we learn from the text above and the plot? As we move through the tree, moving to the left is "No" while moving to the right is "Yes". "high" and "low" at the leaf nodes indicates that is the prediction of the profitability of the purchase. 
-We actually learn a lot that can help Adidas. The first, and most significant split that determines whether a purchase will be for a high or low magin profit is whether the purchases Men's Apparel,Men's Athletic Footwear,Women's Athletic Footwear,Women's Street Footwear or Men's Street Footwear,Women's Apparel. If the answer to this is yes, we move to the right of the tree and the product is very likely to be low profitability. While the management team at Adidas surely knows which products are high and low profit. For Men's Street Footwear, Women's Apparel, profitability is also predicted to be high, whether Opreating_profits is above or below $149,813.
+## Node 6:
+Split Condition: Product: Men's Street Footwear, Women's Apparel
+Number of observations (n): 959
+Deviance: 1291.0
+Predicted value (yval): high
+Probability of class high (yprob): 0.5996 (60%)
+Probability of class low (yprob): 0.4004 (40%)
+Decision: This node represents a subgroup of data where the product is either Men's Street Footwear or Women's Apparel. The majority class in this subgroup is high, with a probability of 0.5996. The deviance of 1291.0 indicates the level of impurity within this subgroup.
+
+## Node 7:
+Split Condition: Product: Men's Apparel, Men's Athletic Footwear, Women's Athletic Footwear, Women's Street Footwear
+Number of observations (n): 1969
+Deviance: 2471.0
+Predicted value (yval): low
+Probability of class high (yprob): 0.3210 (32%)
+Probability of class low (yprob): 0.6790 (67%)
+Decision: This node represents a subgroup of data where the product is either Men's Apparel, Men's Athletic Footwear, Women's Athletic Footwear, or Women's Street Footwear. The majority class in this subgroup is low, with a probability of 0.6790. The deviance of 2471.0 indicates the level of impurity within this subgroup.
+Comparatively, node 6 has a higher predicted probability for the high class (0.5996) compared to node 7 (0.3210). This suggests that the product category "Men's Street Footwear, Women's Apparel" (node 6) is more likely to have a high predicted value. However, it's important to note that these probabilities and predictions are specific to the trained classification tree and should be interpreted within the context of the dataset and the model's performance.
+No alt text provided for this image
+
+![The Tree](https://github.com/akpatiudo/Adidas-Sales-Project/assets/118566096/298711d1-03d6-4239-9141-5697e3aece7d)
+
+As we move through the tree, moving to the left is "No" while moving to the right is "Yes". "high" and "low" at the leaf nodes indicates that it is the prediction of the profitability of the purchase. 
+We actually learn a lot that can help Adidas. The first, and most significant split that determines whether a purchase will be for a high or low margin profit is whether the purchases Men's Apparel,Men's Athletic Footwear,Women's Athletic Footwear,Women's Street Footwear or Men's Street Footwear,Women's Apparel. If the answer to this is yes, we move to the right of the tree and the product is very likely to be High profitability. For Men's Street Footwear, Women's Apparel, profitability is also predicted to be high, whether Opreating_profits is above or below $149,813.
 
 
 
